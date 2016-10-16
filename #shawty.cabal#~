@@ -1,0 +1,11 @@
+name: shawty
+version: 0.1.0.0
+synoysis: Initial project template from stack
+description: Please see README.MD
+homepage:       http://github.com/bitemyapp/shawty
+license: BSD3
+license-file: LICENSE
+author: Chris Allen
+maintainer:      cma@bitemyapp.com
+copyright                                                                   
+         
