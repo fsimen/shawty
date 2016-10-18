@@ -19,8 +19,7 @@ randomElement xs = do
   let maxIndex::Int
       maxIndex = length xs -1
   randomDigit <- SR.randomRIO (0, maxIndex) :: IO Int
-  return 'c'
-  -- return (xs !! randomDigit)
+  return (xs !! randomDigit)
 
 shortyGen :: IO [Char]
 shortyGen = replicateM 7 (randomElement alphaNum)
@@ -48,11 +47,13 @@ linkShorty shorty = concat ["<a href=\""
                             ,shorty
                             , "\">Copy paste your short URL</a>"
                            ]
-shortyCreated :: Show a => a -> String -> TL.Text
+shortyCreated :: Either R.Reply R.Status -> String -> TL.Text
 shortyCreated resp shawty =
-  TL.concat [TL.pack (show resp)
-             , "shorty is: ", TL.pack (linkShorty shawty)
+  case resp of
+    Right _ -> TL.concat [TL.pack (show resp)
+             , "\nshorty is: ", TL.pack (linkShorty shawty)
              ]
+    Left _ ->  TL.pack (show resp)
 shortyAintUri :: TL.Text -> TL.Text
 shortyAintUri uri =
   TL.concat [uri,
@@ -61,8 +62,6 @@ shortyAintUri uri =
 shortyFound :: TL.Text -> TL.Text
 shortyFound tbs =
   TL.concat ["<a href =\"", tbs, "\">", tbs, "</a>"]
-
-shortyAlreadyExist = TL.pack "uri exists"
 
 
 app :: R.Connection -> ScottyM ()
@@ -77,11 +76,10 @@ app rConn = do
         let shorty = BC.pack shawty
             uri' = encodeUtf8 (TL.toStrict uri)
         resp <- liftIO $ do
-          exist <- existURI rConn uri'
+          exist <- existURI rConn shorty
           case exist of 
-            Right _ -> return $ Left $ R.Error "uri exists"
-            Left _ -> (saveURI rConn shorty uri')
-        -- resp <- liftIO (saveURI rConn shorty uri')
+            Right True -> return $ Left $ R.Error "uri exists"
+            Right False -> (saveURI rConn shorty uri')
         html (shortyCreated resp shawty)
       Nothing -> text (shortyAintUri uri)
   get "/:short" $ do
